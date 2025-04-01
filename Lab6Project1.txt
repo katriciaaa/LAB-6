@@ -1,0 +1,222 @@
+// Lab 6 Project 1
+// App.js
+
+import React, { useState } from 'react';
+import {
+  View,
+  Text,
+  TextInput,
+  FlatList,
+  TouchableOpacity,
+  Animated,
+  Alert,
+  Modal,
+  Button,
+  StyleSheet,
+} from 'react-native';
+
+const contactsData = [
+  { id: '1', name: 'Alice Johnson', phone: '123-456-7890' },
+  { id: '2', name: 'Bob Smith', phone: '234-567-8901' },
+  { id: '3', name: 'Charlie Brown', phone: '345-678-9012' },
+  { id: '4', name: 'Diana Ross', phone: '456-789-0123' },
+  { id: '5', name: 'Evan Scott', phone: '567-890-1234' },
+  { id: '6', name: 'Fiona Blake', phone: '678-901-2345' },
+  { id: '7', name: 'George Martin', phone: '789-012-3456' },
+  { id: '8', name: 'Hannah Lee', phone: '890-123-4567' },
+  { id: '9', name: 'Isaac Newton', phone: '901-234-5678' },
+  { id: '10', name: 'Jane Doe', phone: '012-345-6789' },
+];
+
+const ContactItem = ({ contact, onDelete, onEdit, onCall }) => {
+  const fadeAnim = new Animated.Value(1);
+
+  const handleDelete = () => {
+    Alert.alert(
+      'Confirm Deletion',
+      `Are you sure you want to delete ${contact.name}?`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: () => {
+            Animated.timing(fadeAnim, {
+              toValue: 0,
+              duration: 300,
+              useNativeDriver: true,
+            }).start(() => onDelete());
+          },
+        },
+      ]
+    );
+  };
+
+  return (
+    <Animated.View style={[styles.contactItem, { opacity: fadeAnim }]}>
+      <View>
+        <Text style={styles.contactName}>{contact.name}</Text>
+        <Text style={styles.contactPhone}>{contact.phone}</Text>
+      </View>
+
+      <View style={styles.actionButtons}>
+        <TouchableOpacity onPress={() => onEdit(contact)} style={styles.editButton}>
+          <Text style={styles.editText}>Edit</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity onPress={() => onCall(contact.phone)} style={styles.callButton}>
+          <Text style={styles.callText}>Call</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity onPress={handleDelete} style={styles.deleteButton}>
+          <Text style={styles.deleteText}>Delete</Text>
+        </TouchableOpacity>
+      </View>
+    </Animated.View>
+  );
+};
+// Complete the program
+const AnimatedContactList = () => {
+  const [contacts, setContacts] = useState(contactsData);
+  const [search, setSearch] = useState('');
+  const [isModalVisible, setIsModalVisible] = useState(false);
+  const [selectedContact, setSelectedContact] = useState(null);
+
+  const filteredContacts = contacts.filter(contact =>
+    contact.name.toLowerCase().includes(search.toLowerCase())
+  );
+
+  const handleDelete = (id) => {
+    setContacts(previousContacts =>
+      previousContacts.filter(contact => contact.id !== id)
+    );
+  };
+
+  const handleEdit = (contact) => {
+    setSelectedContact(contact);
+    setIsModalVisible(true);
+  };
+
+  const handleSaveEdit = () => {
+    setContacts(previousContacts =>
+      previousContacts.map(item =>
+        item.id === selectedContact.id ? selectedContact : item
+      )
+    );
+    setIsModalVisible(false);
+  };
+
+  const handleCall = (phone) => {
+    Alert.alert('Calling...', `Dialing ${phone}`, [{ text: 'OK' }]);
+  };
+
+  return (
+    <View style={styles.container}>
+      <TextInput
+        style={styles.searchInput}
+        placeholder="Search contacts..."
+        value={search}
+        onChangeText={setSearch}
+      />
+
+      <FlatList
+        data={filteredContacts}
+        keyExtractor={(item) => item.id}
+        renderItem={({ item }) => (
+          <ContactItem
+            contact={item}
+            onDelete={() => handleDelete(item.id)}
+            onEdit={handleEdit}
+            onCall={handleCall}
+          />
+        )}
+        ListEmptyComponent={<Text style={styles.emptyText}>No contacts found.</Text>}
+      />
+
+      {/* Modal for Editing Contacts */}
+      <Modal visible={isModalVisible} animationType="slide" transparent={true}>
+        <View style={styles.modalContainer}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>Edit Contact</Text>
+            <TextInput
+              style={styles.input}
+              value={selectedContact?.name}
+              onChangeText={(text) =>
+                setSelectedContact({ ...selectedContact, name: text })
+              }
+            />
+            <TextInput
+              style={styles.input}
+              value={selectedContact?.phone}
+              onChangeText={(text) =>
+                setSelectedContact({ ...selectedContact, phone: text })
+              }
+              keyboardType="phone-pad"
+            />
+            <Button title="Save Changes" onPress={handleSaveEdit} />
+            <Button title="Cancel" color="red" onPress={() => setIsModalVisible(false)} />
+          </View>
+        </View>
+      </Modal>
+    </View>
+  );
+};
+
+const styles = StyleSheet.create({
+  container: { flex: 1, padding: 20, backgroundColor: '#f5f5f5' },
+  searchInput: {
+    borderWidth: 1,
+    borderColor: '#ddd',
+    padding: 10,
+    marginBottom: 10,
+    borderRadius: 5,
+  },
+  contactItem: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    padding: 15,
+    backgroundColor: '#fff',
+    marginBottom: 8,
+    borderRadius: 5,
+    shadowColor: '#000',
+    shadowOpacity: 0.1,
+    shadowRadius: 5,
+    elevation: 3,
+  },
+  contactName: { fontSize: 16, fontWeight: 'bold' },
+  contactPhone: { color: '#555' },
+  actionButtons: { flexDirection: 'row', gap: 5 },
+  editButton: { backgroundColor: '#FFD700', padding: 5, borderRadius: 3 },
+  editText: { color: '#000', fontWeight: 'bold' },
+  callButton: { backgroundColor: '#4CAF50', padding: 5, borderRadius: 3 },
+  callText: { color: '#fff', fontWeight: 'bold' },
+  deleteButton: { backgroundColor: '#ff4444', padding: 5, borderRadius: 3 },
+  deleteText: { color: '#fff' },
+  emptyText: { textAlign: 'center', marginTop: 20, fontSize: 16, color: '#888' },
+
+  // Modal Styles
+  modalContainer: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalContent: {
+    width: 300,
+    backgroundColor: '#fff',
+    borderRadius: 10,
+    padding: 20,
+    alignItems: 'center',
+  },
+  modalTitle: { fontSize: 20, fontWeight: 'bold', marginBottom: 15 },
+  input: {
+    width: '100%',
+    borderWidth: 1,
+    borderColor: '#ddd',
+    padding: 10,
+    marginBottom: 10,
+    borderRadius: 5,
+  },
+});
+
+export default AnimatedContactList;
