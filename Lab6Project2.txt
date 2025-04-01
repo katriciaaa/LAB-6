@@ -1,0 +1,89 @@
+// Lab 6 Project 2
+// TaskManagerApp.js (App.js)
+
+import React, { useState } from 'react';
+import { View, FlatList, StyleSheet, Animated, PanResponder, Text, TouchableOpacity, Alert } from 'react-native';
+import TaskItem from './TaskItem';
+
+
+//Complete the program 
+
+const initialTasks = [
+  {id: '1', title: 'Complete Project for CMPS 285'},
+  {id: '2', title: 'Study for final exam for CMPS 370'},
+  {id: '3', title: 'Meet with Group members for CMPS 364'},
+];
+
+const TaskManagerApp = (id) => {
+
+const [tasks, setTasks] = useState(initialTasks);
+const [recentlyDeleted, setRecentlyDeleted] = useState(null);
+
+const deleteTask = (id) => {
+  const taskToDelete = tasks.find((task) => task.id === id);
+  setRecentlyDeleted(taskToDelete);
+  
+  setTasks((prevTasks) => prevTasks.filter((task) => task.id !== id));
+
+  Alert.alert('Task Deleted', `${taskToDelete.title} has beed deleted`, 
+  [
+    {
+      text: 'Undo', onPress: () => setTasks((prev) => [...prev, recentlyDeleted]),
+    },
+    {text: 'OK'},
+  ]
+  );
+};
+
+  const getPanResponder = (animatedValue, id) =>
+    PanResponder.create({
+      onStartShouldSetPanResponder: () => true,
+      onPanResponderMove: (_, gesture) => {
+        animatedValue.setValue(gesture.dx);
+      },
+      onPanResponderRelease: (_, gesture) => {
+        if (gesture.dx < -100) {
+          Animated.timing(animatedValue, {
+            toValue: -500,
+            duration: 300,
+            useNativeDriver: true,
+          }).start(() => deleteTask(id));
+        } else {
+          Animated.spring(animatedValue, {
+            toValue: 0,
+            useNativeDriver: true,
+          }).start();
+        }
+      },
+    });
+
+  return (
+    <View style={styles.container}>
+      <FlatList
+        data={tasks}
+        keyExtractor={(item) => item.id}
+        renderItem={({ item }) => {
+          const animatedValue = new Animated.Value(0);
+          return (
+            <TaskItem
+              task={item}
+              onDelete={deleteTask}
+              panResponder={getPanResponder(animatedValue, item.id)}
+              animatedValue={animatedValue}
+            />
+          );
+        }}
+        ListEmptyComponent={
+          <Text style={styles.emptyText}>No tasks available. Add some tasks!</Text>
+        }
+      />
+    </View>
+  );
+};
+
+const styles = StyleSheet.create({
+  container: { flex: 1, padding: 20, backgroundColor: '#E3F2FD' },
+  emptyText: { textAlign: 'center', marginTop: 20, fontSize: 18, color: '#555' },
+});
+
+export default TaskManagerApp;
